@@ -3,10 +3,21 @@ import pool from "./db.js";
 
 const router = express.Router();
 
-// Health
+/**
+ * Health Check
+ */
 router.get("/health", (req, res) => res.json({ status: "ok" }));
 
-// Profile (enhanced with related data)
+/**
+ * Root Welcome Route
+ */
+router.get("/", (req, res) => {
+  res.send("✅ Me-API Playground backend is running! Try /health or /profile");
+});
+
+/**
+ * Profile (with related data)
+ */
 router.get("/profile", async (req, res) => {
   try {
     const { rows: profileRows } = await pool.query("SELECT * FROM profile LIMIT 1");
@@ -16,12 +27,12 @@ router.get("/profile", async (req, res) => {
 
     // Fetch related data
     const { rows: skills } = await pool.query(
-      "SELECT skill FROM skills WHERE profile_id=$1",
+      "SELECT skill FROM skills WHERE profile_id=$1 ORDER BY skill ASC",
       [profile.id]
     );
 
     const { rows: projects } = await pool.query(
-      "SELECT title, description, link FROM projects WHERE profile_id=$1",
+      "SELECT id, title, description, link FROM projects WHERE profile_id=$1",
       [profile.id]
     );
 
@@ -35,7 +46,6 @@ router.get("/profile", async (req, res) => {
       [profile.id]
     );
 
-    // Send combined JSON
     res.json({
       ...profile,
       skills: skills.map(s => s.skill),
@@ -44,14 +54,14 @@ router.get("/profile", async (req, res) => {
       links: links[0] || {}
     });
   } catch (err) {
-    console.error(err);
+    console.error("❌ Error in /profile:", err);
     res.status(500).json({ error: "Server error" });
   }
 });
 
-
-
-// Return all skills for profile 1 (sorted)
+/**
+ * Top Skills
+ */
 router.get("/skills/top", async (req, res) => {
   try {
     const { rows } = await pool.query(
@@ -59,34 +69,33 @@ router.get("/skills/top", async (req, res) => {
     );
     res.json(rows.map(r => r.skill));
   } catch (err) {
-    console.error(err);
+    console.error("❌ Error in /skills/top:", err);
     res.status(500).json({ error: "Server error" });
   }
 });
 
+/**
+ * Search across projects, skills, work, and profile
+ */
 router.get("/search", async (req, res) => {
   try {
     const q = `%${req.query.q}%`;
 
-    // Search projects
     const { rows: projects } = await pool.query(
       "SELECT 'project' AS type, title AS name, description, link FROM projects WHERE title ILIKE $1 OR description ILIKE $1",
       [q]
     );
 
-    // Search skills
     const { rows: skills } = await pool.query(
       "SELECT 'skill' AS type, skill AS name FROM skills WHERE skill ILIKE $1",
       [q]
     );
 
-    // Search work
     const { rows: work } = await pool.query(
       "SELECT 'work' AS type, role AS name, company, duration FROM work WHERE role ILIKE $1 OR company ILIKE $1",
       [q]
     );
-    
-    // Search profile
+
     const { rows: profile } = await pool.query(
       "SELECT 'profile' AS type, name, email, education FROM profile WHERE name ILIKE $1 OR email ILIKE $1 OR education ILIKE $1",
       [q]
@@ -95,23 +104,24 @@ router.get("/search", async (req, res) => {
     const results = [...projects, ...skills, ...work, ...profile];
     res.json(results);
   } catch (err) {
-    console.error(err);
+    console.error("❌ Error in /search:", err);
     res.status(500).json({ error: "Server error" });
   }
 });
-// Projects filtered by skill (case-insensitive, partial match)
+
+/**
+ * Projects filtered by skill
+ */
 router.get("/projects", async (req, res) => {
   try {
     const skill = req.query.skill;
-    if (!skill) {
-      return res.json([]);
-    }
+    if (!skill) return res.json([]);
 
     const { rows } = await pool.query(
-      `SELECT * FROM projects 
-       WHERE EXISTS (
-         SELECT 1 FROM unnest(skills) s WHERE s ILIKE $1
-       )`,
+      `SELECT p.id, p.title, p.description, p.link
+       FROM projects p
+       JOIN skills s ON p.profile_id = s.profile_id
+       WHERE s.skill ILIKE $1`,
       [`%${skill}%`]
     );
 
