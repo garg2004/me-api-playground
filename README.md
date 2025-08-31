@@ -1,39 +1,54 @@
 # Me-API Playground
 
 ## 🚀 Goal
-A full-stack mini playground that stores my profile in a DB and exposes it via APIs + minimal frontend.
+A full-stack mini playground that stores my profile in a PostgreSQL database and exposes it via APIs with a minimal frontend to query profile, projects, skills, and work experience.
 
 ---
 
 ## 🏗️ Architecture
 - **Backend**: Node.js (Express) + PostgreSQL
 - **Frontend**: React (Vite)
-- **Hosting**: Backend (Render), Frontend (Vercel), DB (Supabase/Railway)
+- **Database**: PostgreSQL (Render Cloud DB)
+- **Hosting**: Backend (Render), Frontend (Vercel)
+
+---
+
+## 🌐 Live URLs
+- **Frontend (Vercel)**: [Me-API Playground Frontend](https://me-api-playground-3v79.vercel.app)  
+- **Backend (Render)**: [Me-API Playground Backend](https://me-api-playground-8.onrender.com)  
+- **Resume**: [View Resume](https://drive.google.com/file/d/1cDggKqKj7Y5tyLLPA-35o7H2ZeLSZ1_6/view?usp=sharing)
 
 ---
 
 ## 📌 API Endpoints
-- `GET /health` → check service
-- `GET /profile` → fetch profile
-- `POST /profile` → create profile
-- `PUT /profile` → update profile
-- `GET /projects?skill=python` → projects by skill
-- `GET /skills/top` → top 5 skills
-- `GET /search?q=mern` → search across projects
+- `GET /health` → Service liveness check
+- `GET /profile` → Fetch profile (with skills, projects, work, links)
+- `POST /profile` → Create profile
+- `PUT /profile` → Update profile
+- `GET /projects?skill=python` → List projects filtered by skill
+- `GET /skills/top` → Top skills
+- `GET /search?q=mern` → Search across profile, projects, work, skills
 
 ---
 
 ## 🗄️ Database Schema
-(see `backend/src/schema.sql`)
+See [`backend/src/schema.sql`](backend/src/schema.sql).
+
+### Tables:
+- `profile` → id, name, email, education, phone, cgpa  
+- `skills` → id, profile_id, skill  
+- `projects` → id, profile_id, title, description, link  
+- `work` → id, profile_id, role, company, duration  
+- `links` → id, profile_id, github, linkedin  
+
+Seed data is in [`backend/src/seed.sql`](backend/src/seed.sql).
 
 ---
 
 ## ▶️ Run Locally
+
+### Backend
 ```bash
 cd backend
-npm install
-npm run dev
-
-cd frontend
 npm install
 npm run dev
