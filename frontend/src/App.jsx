@@ -1,7 +1,7 @@
 import { useState } from "react";
 import Profile from "./profile";
 
-const API = "http://localhost:5000";
+const API = "https://me-api-playground-8.onrender.com";
  // replace with deployed backend
 
 function App() {
